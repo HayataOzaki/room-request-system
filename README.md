@@ -43,6 +43,24 @@ supabase/schema.sql     # 必要なテーブル定義
 
 ## セットアップ
 
+### 事前準備（初回のみ）
+
+macOS のように標準で `npm` が入っていない環境では、まず Node.js をインストールしてください。推奨バージョンは 18 以上です。
+
+- **Homebrew を利用する場合**
+  ```bash
+  brew install node
+  ```
+- **nvm を利用する場合**
+  ```bash
+  # nvm のインストール（未導入の場合）
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+  # シェルを再読み込みしてから Node.js を導入
+  nvm install --lts
+  ```
+
+`node -v` と `npm -v` が表示されれば準備完了です。
+
 1. 依存関係をインストール
    ```bash
    npm install
