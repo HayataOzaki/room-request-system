@@ -61,8 +61,17 @@ macOS のように標準で `npm` が入っていない環境では、まず Nod
 
 `node -v` と `npm -v` が表示されれば準備完了です。
 
-1. 依存関係をインストール
+1. リポジトリへ移動して依存関係をインストール
    ```bash
+   # まだクローンしていない場合
+   git clone https://github.com/HayataOzaki/room-request-system.git
+   cd room-request-system
+
+   # Node.js / npm のバージョンを確認
+   node -v
+   npm -v
+
+   # パッケージをインストール
    npm install
    ```
    ※ 現在の開発環境では npm registry へのアクセス制限があるため失敗する場合があります。ローカルでは問題なくインストールできます。
@@ -70,6 +79,11 @@ macOS のように標準で `npm` が入っていない環境では、まず Nod
 2. 環境変数の設定
    ```bash
    cp .env.example .env
+
+   # エディタで .env を開いて値を入力
+   code .env      # VS Code の場合
+   # もしくは
+   nano .env
    ```
    `.env` に以下を設定します。
    - `NEXT_PUBLIC_SUPABASE_URL`
@@ -80,7 +94,17 @@ macOS のように標準で `npm` が入っていない環境では、まず Nod
    - `SITE_URL` (メール本文に利用)
 
 3. Supabase のセットアップ
-   - Supabase プロジェクトを作成し、`supabase/schema.sql` を適用します。
+   ```bash
+   # Supabase CLI が未インストールの場合
+   npm install -g supabase
+
+   # ログイン（ブラウザが開きます）
+   supabase login
+
+   # 対象プロジェクトを選択してスキーマを適用
+   supabase db push --file supabase/schema.sql
+   ```
+   - CLI を利用しない場合は、Supabase ダッシュボードの SQL エディタで `supabase/schema.sql` の内容を貼り付けて実行します。
    - Authentication > Email templates を必要に応じて調整してください。
    - RLS を使用する場合は、各テーブルに適切なポリシーを設定してください（MVP ではサービスロールキー経由で操作します）。
 
@@ -88,7 +112,7 @@ macOS のように標準で `npm` が入っていない環境では、まず Nod
    ```bash
    npm run dev
    ```
-   `http://localhost:3000` を開いて確認します。
+   ブラウザで `http://localhost:3000` を開き、入居希望者フォームと不動産会社向けダッシュボードを確認します。初回アクセス時は Supabase の認証メールが届くため、招待したアカウントを有効化してください。
 
 ## Supabase スキーマ
 
