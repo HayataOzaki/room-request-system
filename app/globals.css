@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  background-color: #f5f2e9;
+}
+
+body {
+  @apply bg-beige-100 text-charcoal font-sans antialiased;
+}
+
+a {
+  @apply text-gold underline-offset-4 transition hover:underline;
+}
+
+button {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-beige-100;
+}

@@ -1,219 +1,140 @@
-# 🎯 Rent Offer Platform (仮称: OFFEROOM / OSHIROOM)
+# OfferRoom (room-request-system)
 
-賃貸希望者が条件を入力すると、  
-対応可能な不動産会社に自動でリードが届く **賃貸リードマッチングSaaS** の MVP。
+逆リクエスト型の賃貸リードマッチングSaaSのMVP実装です。入居希望者の希望条件を基に、対応エリアの不動産会社へ自動でリード通知を行います。不動産会社はダッシュボードでリードを閲覧し、対応状況を管理できます。
 
-> 入居希望者の「希望条件リクエスト」 → 不動産会社が受け取る  
-従来の物件検索ではなく **逆リクエスト型賃貸サービス**。
+## 機能概要
 
----
+### 入居希望者向け
+- ステップ形式の希望条件フォーム（基本情報 → エリア → 条件 → 確認）
+- 確認画面 / 完了画面
+- リクエスト送信時に Supabase へデータ保存 & SendGrid 経由で通知メール送信
 
-## 🚀 目的
+### 不動産会社向け
+- 審査制を想定したアカウント登録（サービスロールキーでアカウントを発行し、初期状態は未承認）
+- メール+パスワードによるログイン（Supabase Auth）
+- ダッシュボード（受信リード数 / 閲覧数 / 最新受信日時）
+- リード一覧 / 詳細表示（閲覧時に既読化）
+- 対応エリア設定の更新フォーム
+- ログアウト
 
-- 賃貸希望者は探さずに「希望条件を送るだけ」
-- 不動産会社は自社エリアに合うリードを受信
-- 公正・効率的なリード配信で成約率を向上
+## 技術スタック
 
-将来的には課金モデル（リード課金 / 閲覧課金 / サブスク＋従量）へ拡張。
+| Layer | Stack |
+| --- | --- |
+| Framework | Next.js 14 (App Router, TypeScript) |
+| UI | Tailwind CSS, カスタム shadcn 風 UI コンポーネント, Lucide Icons |
+| Auth / DB | Supabase Auth, Supabase Postgres (REST API) |
+| Validation | Zod, React Hook Form |
+| Mail | SendGrid |
 
----
+## ディレクトリ構成
 
-## 🧭 コア機能（MVP）
+```
+app/
+  ├─ (auth)/agent/...   # 不動産会社の登録 / ログイン
+  ├─ (agent)/agent/...  # ログイン後のダッシュボード
+  ├─ form/...           # 入居希望フォーム一式
+  ├─ api/requests/      # 希望条件送信 API
+  └─ ...
+components/             # UI コンポーネント
+lib/                    # Supabase クライアント, バリデーション, メールユーティリティ
+supabase/schema.sql     # 必要なテーブル定義
+```
 
-### 👤 賃貸希望者側
-- エリア・条件フォーム入力
-- ステップ式UI
-- 入力確認・送信
-- 完了画面
-- 自分宛の受付メール
+## セットアップ
 
-### 🏢 不動産会社側
-- アカウント登録・ログイン（審査制）
-- 対応エリア登録（市区町村／駅）
-- ダッシュボード
-- リード一覧／詳細閲覧
-- 閲覧ステータス（既読管理）
+### 事前準備（初回のみ）
 
-### ✉️ 通知
-- 新規リード → 対応不動産会社へメール
-- ユーザー受付メール
+macOS のように標準で `npm` が入っていない環境では、まず Node.js をインストールしてください。推奨バージョンは 18 以上です。
 
----
+- **Homebrew を利用する場合**
+  ```bash
+  brew install node
+  ```
+- **nvm を利用する場合**
+  ```bash
+  # nvm のインストール（未導入の場合）
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+  # シェルを再読み込みしてから Node.js を導入
+  nvm install --lts
+  ```
 
-## 🛠️ 技術スタック
+`node -v` と `npm -v` が表示されれば準備完了です。
 
-| レイヤ | 技術 |
-|---|---|
-Framework | **Next.js** (App Router / TypeScript)  
-UI | **Tailwind CSS**, **shadcn/ui**, **Radix UI**, lucide-react  
-Auth | **Supabase Auth**  
-DB | **Supabase PostgreSQL + Prisma**  
-Mail | **SendGrid**  
-Deploy | **Vercel**  
+1. リポジトリへ移動して依存関係をインストール
+   ```bash
+   # まだクローンしていない場合
+   git clone https://github.com/HayataOzaki/room-request-system.git
+   cd room-request-system
 
----
+   # Node.js / npm のバージョンを確認
+   node -v
+   npm -v
 
-## 🎨 UI/UX要件
+   # パッケージをインストール
+   npm install
+   ```
+   ※ 現在の開発環境では npm registry へのアクセス制限があるため失敗する場合があります。ローカルでは問題なくインストールできます。
 
-| 項目 | 内容 |
-|---|---|
-スタイル | ミニマル × 信頼感 × 住宅Tech  
-カラー | Trust Beige (#F5F2E9 / #1C1C1C / Gold #D4AF37)  
-フォント | Inter + Noto Sans JP  
-特徴 | 余白広め、角丸大、モーション控えめ、カード多用  
-パターン | ステップフォーム、ダッシュボードUI  
+2. 環境変数の設定
+   ```bash
+   cp .env.example .env
 
----
+   # エディタで .env を開いて値を入力
+   code .env      # VS Code の場合
+   # もしくは
+   nano .env
+   ```
+   `.env` に以下を設定します。
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SENDGRID_API_KEY`
+   - `SYSTEM_FROM_EMAIL`
+   - `SITE_URL` (メール本文に利用)
 
-## 📂 ページ構成
+3. Supabase のセットアップ
+   ```bash
+   # Supabase CLI が未インストールの場合
+   npm install -g supabase
 
-/ # LP
-/form # 入居希望フォーム
-/form/confirm # 確認
-/thanks # 完了
+   # ログイン（ブラウザが開きます）
+   supabase login
 
-/agent/register # 業者登録
-/agent/login # ログイン
-/agent/dashboard
-/agent/leads
-/agent/leads/:id
-/agent/settings # 対応エリア
+   # 対象プロジェクトを選択してスキーマを適用
+   supabase db push --file supabase/schema.sql
+   ```
+   - CLI を利用しない場合は、Supabase ダッシュボードの SQL エディタで `supabase/schema.sql` の内容を貼り付けて実行します。
+   - Authentication > Email templates を必要に応じて調整してください。
+   - RLS を使用する場合は、各テーブルに適切なポリシーを設定してください（MVP ではサービスロールキー経由で操作します）。
 
-pgsql
-コードをコピーする
+4. 開発サーバーを起動
+   ```bash
+   npm run dev
+   ```
+   ブラウザで `http://localhost:3000` を開き、入居希望者フォームと不動産会社向けダッシュボードを確認します。初回アクセス時は Supabase の認証メールが届くため、招待したアカウントを有効化してください。
 
----
+## Supabase スキーマ
 
-## 🗄️ データモデル
+`supabase/schema.sql` に、以下のテーブル定義が含まれます。
 
-### users（賃貸希望者）
-| field | type |
-|---|---|
-id | uuid  
-name | text  
-email | text  
-phone | text  
-created_at | timestamp  
+- `users`
+- `search_conditions`
+- `real_estate_agents`
+- `leads`
 
-### search_conditions
-| field | type |
-|---|---|
-id | uuid  
-user_id | FK  
-city_id | int  
-station_id | int  
-rent_max | numeric  
-area_min / area_max | int  
-madori | text  
-walk_minutes | int  
-created_at | timestamp  
+`real_estate_agents.is_approved` を true にするとリード配信対象となります。
 
-### real_estate_agents
-| field | type |
-|---|---|
-id | uuid  
-company_name | text  
-email | text  
-is_approved | boolean  
-service_city_ids | jsonb  
-service_station_ids | jsonb  
-created_at | timestamp  
+## メール送信
 
-### leads
-| field | type |
-|---|---|
-id | uuid  
-search_condition_id | FK  
-agent_id | FK  
-is_viewed | boolean  
-viewed_at | timestamp  
-created_at | timestamp  
+`lib/mail.ts` で SendGrid を利用しています。`SENDGRID_API_KEY` 未設定の場合は送信をスキップし、サーバーログにメッセージを出力します。
 
----
+## 開発メモ
 
-## 🔁 基本フロー
+- UI は Trust Beige カラーパレットをベースに、余白と角丸を大きめに取ったミニマルなデザインです。
+- 入居希望フォームは sessionStorage を使用して確認画面へデータを受け渡しています。
+- 不動産会社向けページは Supabase セッションを利用して保護しており、未ログイン時は `/agent/login` へリダイレクトされます。
 
-User submits conditions
-↓
-Match agents by city/station
-↓
-Generate leads records
-↓
-Send email to matched agents
-↓
-Agent logs in → views lead
-↓
-Mark viewed → future billing logic
+## ライセンス
 
-yaml
-コードをコピーする
-
----
-
-## ✅ MVPスコープ
-
-- [x] 入居希望フォーム
-- [x] Supabase Auth for agents
-- [x] 審査フラグ(is_approved)
-- [x] リード生成・通知
-- [x] ダッシュボード
-- [x] リード閲覧状態管理
-
----
-
-## 🧪 非スコープ（後で対応）
-
-- 決済（Stripe）
-- LINE通知
-- 物件添付
-- ユーザー管理画面
-- 管理者UI
-
----
-
-## 🚧 開発ガイド
-
-UI scaffold with shadcn
-
-Auth / session guard
-
-Prisma schema → migrate
-
-Form + validation
-
-Email flow
-
-Dashboard & views
-
-Deploy on Vercel
-
-yaml
-コードをコピーする
-
----
-
-## 🌱 ローカルセットアップ
-
-npm i
-cp .env.example .env
-
-Set SUPABASE_URL / KEY / SENDGRID_KEY
-npm run dev
-
-yaml
-コードをコピーする
-
----
-
-## 📜 ライセンス
-
-MIT (変更可)
-
----
-
-## ✨ Author
-
-Startup builder / property & UX direction by **@あなた**  
-AI coding support via **Codex + ChatGPT**
-
----
+MIT
